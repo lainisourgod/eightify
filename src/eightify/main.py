@@ -13,15 +13,22 @@ app = FastAPI()
 
 class VideoRequest(BaseModel):
     video_id: str
-    insight_request: Optional[str] = None
 
 
 class SummarizeResponse(BaseModel):
-    video_details: youtube.VideoDetails
     summary: str
+
+
+class CommentAnalysisRequest(BaseModel):
+    video_id: str
+    insight_request: Optional[str] = None
+
+
+class CommentAnalysisResponse(BaseModel):
     comment_analysis: str
 
 
+# TODO: cache video details, transcript, and summary
 @app.post("/summarize", response_model=SummarizeResponse)
 async def summarize_video(request: VideoRequest):
     video_details = youtube.get_video_details(request.video_id)
@@ -35,14 +42,15 @@ async def summarize_video(request: VideoRequest):
     # TODO: use async APIs
     summary = openai.summarize_text(transcript.text, video_details.title, video_details.description)
 
+    return SummarizeResponse(summary=summary)
+
+
+@app.post("/analyze_comments", response_model=CommentAnalysisResponse)
+async def analyze_video_comments(request: CommentAnalysisRequest):
     comments = youtube.get_video_comments(request.video_id)
     comment_analysis = openai.analyze_comments(comments, request.insight_request)
 
-    return SummarizeResponse(
-        video_details=video_details,
-        summary=summary,
-        comment_analysis=comment_analysis,
-    )
+    return CommentAnalysisResponse(comment_analysis=comment_analysis)
 
 
 @app.get("/")

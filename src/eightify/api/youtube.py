@@ -51,7 +51,9 @@ def get_video_comments(video_id: str, max_results: int = 100) -> List[VideoComme
         part="snippet",
         videoId=video_id,
         maxResults=max_results,
-        order="relevance",  # This sorts comments by relevance
+        # This ensures we get top comments and some random ones
+        # TODO: play with getting more different comments and analyzing them
+        order="relevance",
     )
     response = request.execute()
 

@@ -24,4 +24,9 @@ Relax and find insights.
 - Automatic evaluation pipeline using LLM framework (too much to implement
   myself)
 - Performance benchmarks
--
+- Caching generated summaries and transcripts
+- Divide backend and frontend into distinct packages
+  - Retrieve relevant YouTube data for the frontend without directly using the
+    internal backend code
+- Fetch more comments, not only "relevant" ones for more insightful analysis
+  - Maybe need to use https://github.com/egbertbouman/youtube-comment-downloader

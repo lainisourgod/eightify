@@ -11,6 +11,8 @@ dependencies = [
     "google-api-python-client>=2.134.0",
     "python-dotenv>=1.0.1",
     "loguru>=0.7.2",
+    "streamlit>=1.36.0",
+    "requests>=2.32.3",
 ]
 readme = "README.md"
 requires-python = ">= 3.11"
@@ -25,6 +27,13 @@ dev-dependencies = ["ruff>=0.4.10", "pre-commit>=3.7.1", "pytest>=8.2.2"]
 
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.lint]
+select = ["I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["eightify"]
+
 
 [tool.pytest.ini_options]
 markers = [
