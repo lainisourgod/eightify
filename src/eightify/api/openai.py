@@ -14,7 +14,7 @@ def summarize_text(
     video_description: str,
     max_points: int = 10,
     max_length: int = 500,
-):
+) -> str:
     """
     Summarize the following YouTube video transcript in up to {max_points} key points.
     Video title and description given as the context to the prompt.
@@ -65,7 +65,7 @@ def summarize_text(
     return response.choices[0].message.content
 
 
-def analyze_comments(comments: list, insight_request: str | None = None):
+def analyze_comments(comments: list, insight_request: str | None = None) -> str:
     """
     Analyze the following YouTube video comments and provide insights.
     You can optionally provide a user-specified insight request, prompting AI

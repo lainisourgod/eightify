@@ -10,7 +10,18 @@ Relax and find insights.
 
 ## Development
 
-- Install rye:
+- Install rye — yet another package manager, but from the creators of ruff:
+  `curl -sSf https://rye.astral.sh/get | bash`
 - Install env `rye sync`
+- Install pre-commit hooks: `pre-commit install`
 - Put creds in `.env`
-- Backend test from openapi: `127.0.0.1:8000/docs`
+- Run tests: `rye run pytest`
+- Test from swagger docs: `127.0.0.1:8000/docs`
+
+## TODO:
+
+- Migrate to LLM framework (LangChain/HayStack)
+- Automatic evaluation pipeline using LLM framework (too much to implement
+  myself)
+- Performance benchmarks
+-
