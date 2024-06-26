@@ -1,7 +1,10 @@
 import os
+
 import openai
 from dotenv import load_dotenv
 from loguru import logger
+
+from eightify.types import VideoComment
 
 load_dotenv(override=True)
 
@@ -65,14 +68,14 @@ def summarize_text(
     return response.choices[0].message.content
 
 
-def analyze_comments(comments: list, insight_request: str | None = None) -> str:
+def analyze_comments(comments: list[VideoComment], insight_request: str | None = None) -> str:
     """
     Analyze the following YouTube video comments and provide insights.
     You can optionally provide a user-specified insight request, prompting AI
     to focus on that aspect in the comments.
     """
     COMMENT_SEPARATOR = "|||"
-    comment_text = COMMENT_SEPARATOR.join(comments)
+    comment_text = COMMENT_SEPARATOR.join([comment.text for comment in comments])
 
     base_prompt = f"""
     Analyze the following YouTube video comments and provide insights. The comments are separated by '{COMMENT_SEPARATOR}'.

@@ -1,29 +1,18 @@
 import os
-from googleapiclient.discovery import build
-from youtube_transcript_api import YouTubeTranscriptApi
-from dotenv import load_dotenv
-from loguru import logger
-from pydantic import BaseModel
 from typing import List, Optional
+
+from dotenv import load_dotenv
+from googleapiclient.discovery import build
+from loguru import logger
+from youtube_transcript_api import YouTubeTranscriptApi
+
+from eightify.types import VideoComment, VideoDetails, VideoTranscript
 
 load_dotenv()
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
-
-
-class VideoDetails(BaseModel):
-    title: str
-    description: str
-
-
-class VideoTranscript(BaseModel):
-    transcript: str
-
-
-class VideoComment(BaseModel):
-    text: str
 
 
 def get_video_details(video_id: str) -> Optional[VideoDetails]:
@@ -49,7 +38,7 @@ def get_video_transcript(video_id: str) -> Optional[VideoTranscript]:
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
         transcript_text = " ".join([entry["text"] for entry in transcript])
-        return VideoTranscript(transcript=transcript_text)
+        return VideoTranscript(text=transcript_text)
 
     except Exception as e:
         logger.error(f"Error fetching transcript: {e}")

@@ -1,4 +1,4 @@
-from eightify.api.youtube import get_video_details, get_video_transcript, get_video_comments
+from eightify.api.youtube import get_video_comments, get_video_details, get_video_transcript
 
 TEST_VIDEO_ID = "dQw4w9WgXcQ"
 
@@ -13,8 +13,8 @@ def test_integration_get_video_details():
 def test_integration_get_video_transcript():
     result = get_video_transcript(TEST_VIDEO_ID)
     assert result
-    assert isinstance(result.transcript, str)
-    assert "never going to sing goodbye" in result.transcript
+    assert isinstance(result.text, str)
+    assert "never going to sing goodbye" in result.text
 
 
 def test_integration_get_video_comments():
