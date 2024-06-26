@@ -21,9 +21,14 @@ build-backend = "hatchling.build"
 
 [tool.rye]
 managed = true
-dev-dependencies = [
-    "ruff>=0.4.10",
-    "pre-commit>=3.7.1",
+dev-dependencies = ["ruff>=0.4.10", "pre-commit>=3.7.1", "pytest>=8.2.2"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
 ]
 
 [tool.hatch.metadata]

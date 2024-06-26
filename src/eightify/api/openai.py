@@ -101,9 +101,7 @@ def analyze_comments(comments: list, insight_request: str | None = None):
 
     # Log the prompt, cropping the middle part if too long
     if len(full_prompt) > 1000:
-        logger.debug(
-            f"Prompt from analyze_comments: {full_prompt[:500]}...{full_prompt[-500:]}"
-        )
+        logger.debug(f"Prompt from analyze_comments: {full_prompt[:500]}...{full_prompt[-500:]}")
     else:
         logger.debug(f"Prompt from analyze_comments: {full_prompt}")
 

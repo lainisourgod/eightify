@@ -34,9 +34,7 @@ async def summarize_video(request: VideoRequest):
     if not transcript:
         raise HTTPException(status_code=404, detail="Transcript not available")
 
-    summary = openai.summarize_text(
-        transcript, video_details["title"], video_details["description"]
-    )
+    summary = openai.summarize_text(transcript, video_details["title"], video_details["description"])
 
     comments = youtube.get_video_comments(request.video_id)
     comment_analysis = openai.analyze_comments(comments, request.insight_request)

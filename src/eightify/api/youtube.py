@@ -43,7 +43,4 @@ def get_video_comments(video_id: str, max_results: int = 100):
         order="relevance",  # This sorts comments by relevance
     )
     response = request.execute()
-    return [
-        item["snippet"]["topLevelComment"]["snippet"]["textDisplay"]
-        for item in response["items"]
-    ]
+    return [item["snippet"]["topLevelComment"]["snippet"]["textDisplay"] for item in response["items"]]

@@ -7,3 +7,13 @@ repos:
       - id: ruff
       # Run the formatter.
       - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: pytest-check
+        types: [python]
+        name: pytest-check
+        entry: python -m pytest -v tests/ -m "not integration"
+        language: system
+        pass_filenames: false
+        always_run: true
