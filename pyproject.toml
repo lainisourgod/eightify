@@ -1,0 +1,30 @@
+[project]
+name = "eightify"
+version = "0.1.0"
+description = "Eightify is a tool to quickly gain insights from YouTube videos."
+authors = [{ name = "lainisourgod", email = "beaverloverock@gmail.com" }]
+dependencies = [
+    "fastapi>=0.111.0",
+    "pydantic>=2.7.4",
+    "openai>=1.35.4",
+    "youtube-transcript-api>=0.6.2",
+    "google-api-python-client>=2.134.0",
+    "python-dotenv>=1.0.1",
+    "loguru>=0.7.2",
+]
+readme = "README.md"
+requires-python = ">= 3.11"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eightify"]
