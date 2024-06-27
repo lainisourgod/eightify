@@ -29,4 +29,4 @@ Relax and find insights.
   - Retrieve relevant YouTube data for the frontend without directly using the
     internal backend code
 - Fetch more comments, not only "relevant" ones for more insightful analysis
-  - Maybe need to use https://github.com/egbertbouman/youtube-comment-downloader
+  - May be relevant https://github.com/egbertbouman/youtube-comment-downloader
