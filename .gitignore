@@ -11,3 +11,7 @@ wheels/
 
 .env
 .python-version
+
+.DS_Store
+
+*.log
