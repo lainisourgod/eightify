@@ -106,13 +106,20 @@ def create_summary_prompt(video_title: str, video_description: str, transcript: 
 
 
 def create_comment_analysis_prompt(
-    comments: list[VideoComment], video_summary: str | None = None, insight_request: str | None = None
+    comments: list[VideoComment],
+    video_details: VideoDetails,
+    video_summary: str | None = None,
+    insight_request: str | None = None,
+    transcript: VideoTranscript | None = None,
 ) -> str:
     COMMENT_SEPARATOR = "|||"
     comment_text = COMMENT_SEPARATOR.join(comment.text for comment in comments)
 
     base_prompt = f"""
     Analyze the following YouTube video comments. The comments are separated by '{COMMENT_SEPARATOR}'.
+    Video information:
+    Title: {video_details.title}
+    Description: {video_details.description}
 
     Your goal is to provide valuable insights that solve these user problems:
     - Finding unique insights without diving into a "rabbit hole" of comments
@@ -201,21 +208,19 @@ def summarize_text(
     """
     cropped_text = transcript.text[: config.max_transcript_length]
     system_prompt = create_system_prompt()
-    user_prompt = create_summary_prompt(video_title, video_description, cropped_text, max_points)
+    user_prompt = create_summary_prompt(video_title, video_description, cropped_text, config.max_points)
 
-    logger.debug(
-        f"Prompt from summarize_text: {user_prompt[:500]}...{user_prompt[-500:]}"
-        if len(user_prompt) > 1000
-        else f"Prompt from summarize_text: {user_prompt}"
-    )
+    log_prompt(user_prompt, "summarize_text")
 
-    return get_llm_response(client, system_prompt, user_prompt)
+    return get_llm_response(system_prompt, user_prompt)
 
 
 def analyze_comments(
     comments: list[VideoComment],
-    video_summary: str | None = None,
+    video_details: VideoDetails,
+    summary: str | None = None,
     insight_request: str | None = None,
+    transcript: VideoTranscript | None = None,
 ) -> str | None:
     """
     Analyze YouTube video comments and provide insights.
@@ -225,12 +230,14 @@ def analyze_comments(
         return None
 
     system_prompt = create_system_prompt()
-    user_prompt = create_comment_analysis_prompt(comments, video_summary, insight_request)
-
-    logger.debug(
-        f"Prompt from analyze_comments: {user_prompt[:500]}...{user_prompt[-500:]}"
-        if len(user_prompt) > 1000
-        else f"Prompt from analyze_comments: {user_prompt}"
+    user_prompt = create_comment_analysis_prompt(
+        comments=comments,
+        video_summary=summary,
+        insight_request=insight_request,
+        video_details=video_details,
+        transcript=transcript,
     )
 
-    return get_llm_response(client, system_prompt, user_prompt)
+    log_prompt(user_prompt, "analyze_comments")
+
+    return get_llm_response(system_prompt, user_prompt)
