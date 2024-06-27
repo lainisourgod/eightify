@@ -1,6 +1,6 @@
 import pytest
 
-from eightify.api.openai import analyze_comments, summarize_text
+from eightify.api.llm import analyze_comments, summarize_text
 
 
 @pytest.mark.integration
