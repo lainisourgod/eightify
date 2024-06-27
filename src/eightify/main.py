@@ -1,14 +1,15 @@
 from typing import Optional
 
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from loguru import logger
 from pydantic import BaseModel
 
 from eightify.api import llm, youtube
+from eightify.config import config
 
-load_dotenv()
+logger.info(f"Starting with config")
+logger.info(config)
 
-app = FastAPI()
+
 
 
 class VideoRequest(BaseModel):

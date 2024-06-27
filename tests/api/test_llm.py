@@ -1,19 +1,25 @@
 import pytest
 
 from eightify.api.llm import analyze_comments, summarize_text
+from eightify.types import VideoComment, VideoDetails, VideoTranscript
 
 
 @pytest.mark.integration
 def test_summarize_text():
-    text = (
-        "This is a sample transcript of a video about artificial intelligence. "
-        "AI is revolutionizing various industries and has the potential to solve complex problems. "
-        "However, it also raises ethical concerns that need to be addressed."
-    )
+    points = [
+        "This is a sample transcript of a video about artificial intelligence.",
+        "AI is revolutionizing various industries and has the potential to solve complex problems.",
+        "However, it also raises ethical concerns that need to be addressed.",
+    ]
+    text = "\n".join(points)
     video_title = "The Impact of AI on Society"
     video_description = "Exploring the benefits and challenges of artificial intelligence."
 
-    summary = summarize_text(text, video_title, video_description)
+    summary = summarize_text(
+        VideoTranscript(text=text, points=points),
+        video_title=video_title,
+        video_description=video_description,
+    )
 
     assert isinstance(summary, str)
     assert len(summary) > 0
@@ -30,7 +36,13 @@ def test_analyze_comments():
         "I disagree with some points. AI isn't as advanced as you claim.",
     ]
 
-    analysis = analyze_comments(comments)
+    analysis = analyze_comments(
+        [VideoComment(text=comment) for comment in comments],
+        VideoDetails(
+            title="The Impact of AI on Society",
+            description="Exploring the benefits and challenges of artificial intelligence.",
+        ),
+    )
 
     assert isinstance(analysis, str)
     assert len(analysis) > 0
@@ -47,7 +59,14 @@ def test_analyze_comments_with_insight_request():
     ]
     insight_request = "Analyze the technical level of understanding among the viewers."
 
-    analysis = analyze_comments(comments, insight_request)
+    analysis = analyze_comments(
+        [VideoComment(text=comment) for comment in comments],
+        VideoDetails(
+            title="The Impact of AI on Society",
+            description="Exploring the benefits and challenges of artificial intelligence.",
+        ),
+        insight_request,
+    )
 
     assert isinstance(analysis, str)
     assert len(analysis) > 0

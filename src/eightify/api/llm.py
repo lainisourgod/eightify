@@ -5,18 +5,23 @@ from dotenv import load_dotenv
 from loguru import logger
 from openai import OpenAI
 
-from eightify.types import VideoComment
+from eightify.config import config
+from eightify.types import VideoComment, VideoDetails, VideoTranscript
 
 load_dotenv(override=True)
-
-LLM_MODEL = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
-if LLM_MODEL.startswith("claude"):
-    client = Anthropic(api_key=os.getenv("ANTHROPIC_KEY"))
+if config.llm_model.startswith("claude"):
+    client = Anthropic(api_key=config.anthropic_key.get_secret_value())
 else:
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = OpenAI(api_key=config.openai_api_key.get_secret_value())
 
 
-MIN_NUMBER_OF_COMMENTS = 10
+def log_prompt(prompt: str, prompt_name: str) -> None:
+    if len(prompt) > config.log_prompt_length:
+        half_length = config.log_prompt_length // 2
+        message = f"Prompt from {prompt_name}: {prompt[:half_length]}\n🙈...🙈\n{prompt[-half_length:]}"
+    else:
+        message = f"Prompt from {prompt_name}: {prompt}"
+    logger.debug(message)
 
 
 def create_system_prompt() -> str:
@@ -166,7 +171,7 @@ def get_llm_response(system_prompt: str, user_prompt: str) -> str | None:
     """
     if isinstance(client, Anthropic):
         response = client.messages.create(
-            model=LLM_MODEL,
+            model=config.llm_model,
             max_tokens=1000,
             temperature=0,
             system=system_prompt,
@@ -175,7 +180,7 @@ def get_llm_response(system_prompt: str, user_prompt: str) -> str | None:
         return response.content[0].text
     elif isinstance(client, OpenAI):
         response = client.chat.completions.create(
-            model=LLM_MODEL,
+            model=config.llm_model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -187,16 +192,14 @@ def get_llm_response(system_prompt: str, user_prompt: str) -> str | None:
 
 
 def summarize_text(
-    text: str,
+    transcript: VideoTranscript,
     video_title: str,
     video_description: str,
-    max_points: int = 3,
-    max_length: int = 500,
 ) -> str | None:
     """
     Summarize a YouTube video transcript.
     """
-    cropped_text = text[:max_length]
+    cropped_text = transcript.text[: config.max_transcript_length]
     system_prompt = create_system_prompt()
     user_prompt = create_summary_prompt(video_title, video_description, cropped_text, max_points)
 
@@ -218,7 +221,7 @@ def analyze_comments(
     Analyze YouTube video comments and provide insights.
     """
     # Doesn't make sense to make a review for this, the user can just check them.
-    if len(comments) < MIN_NUMBER_OF_COMMENTS:
+    if len(comments) < config.min_number_of_comments:
         return None
 
     system_prompt = create_system_prompt()

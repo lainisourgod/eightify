@@ -1,18 +1,14 @@
 import os
 from typing import List, Optional
 
-from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from loguru import logger
 from youtube_transcript_api import YouTubeTranscriptApi
 
+from eightify.config import config
 from eightify.types import VideoComment, VideoDetails, VideoTranscript
 
-load_dotenv()
-
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-
-youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+youtube = build("youtube", "v3", developerKey=config.youtube_api_key.get_secret_value())
 
 
 def get_video_details(video_id: str) -> Optional[VideoDetails]:
@@ -46,7 +42,7 @@ def get_video_transcript(video_id: str) -> Optional[VideoTranscript]:
         return None
 
 
-def get_video_comments(video_id: str, max_results: int = 100) -> List[VideoComment]:
+def get_video_comments(video_id: str, max_results: int = config.max_number_of_comments) -> List[VideoComment]:
     logger.debug(f"Getting video comments for {video_id}")
     request = youtube.commentThreads().list(
         part="snippet",
