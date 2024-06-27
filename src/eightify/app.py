@@ -1,4 +1,3 @@
-import html
 import re
 
 import requests
@@ -11,88 +10,112 @@ from eightify.utils import extract_video_id
 APP_HOST = "http://localhost:8000"
 
 
-def main():
-    st.set_page_config(page_title="Eightify", page_icon="🍓")
-
-    url = st.text_input("Enter YouTube video URL:")
-
-    if url is not None:
-        video_id = extract_video_id(url)
-        if video_id:
-            try:
-                process_video(video_id)
-            except Exception as e:
-                st.error(f"An error occurred: {str(e)}")
-    else:
-        st.error("Invalid YouTube URL. Please enter a valid URL.")
-
-    display_sidebar_info()
-
-
-def process_video(video_id):
-    # Fetch video details
+def display_video_details(video_id):
     video_details = get_video_details(video_id)
 
     if not video_details:
         st.error("No video details found.")
         st.stop()
 
-    # Display video title and embed
     st.subheader(video_details.title)
     st.video(f"https://www.youtube.com/embed/{video_id}")
 
-    # Fetch transcript
-    transcript = get_video_transcript(video_id)
 
-    if not transcript:
-        st.error("No transcript found.")
-        st.stop()
-
-    # Generate summary
-    with st.spinner("Generating summary..."):
-        summary_response = requests.post(
-            f"{APP_HOST}/summarize",
-            json={"video_id": video_id},
-        ).json()
-
-    # Display summary
-    st.subheader("Summary")
-    st.write(summary_response["summary"])
-
-    # Fetch and analyze comments
-    # TODO: insight request
-    with st.spinner("Analyzing comments..."):
-        comments = get_video_comments(video_id)
-        comment_analysis_response = requests.post(
-            f"{APP_HOST}/analyze_comments",
-            json={"video_id": video_id},
-        ).json()
-
-    # Display comment analysis
-    display_comment_analysis(comments, comment_analysis_response["comment_analysis"])
+def summarize_transcript(video_id: str) -> str:
+    summary_response = requests.post(
+        f"{APP_HOST}/summarize",
+        json={"video_id": video_id},
+    ).json()
+    return summary_response.get("summary")
 
 
-def display_comment_analysis(comments: list[VideoComment], comment_analysis: str):
-    st.subheader("Comments")
+def analyze_comments(video_id: str, insight_request: str) -> str:
+    response = requests.post(
+        f"{APP_HOST}/analyze_comments",
+        json={"video_id": video_id, "insight_request": insight_request},
+    ).json()
+    return response.get("comment_analysis")
+
+
+def display_comments(comments: list[VideoComment]):
     with st.expander("Show Comments"):
         for comment in comments:
-            # Parse HTML-like tags to Markdown
-            parsed_comment = comment.text
-            parsed_comment = parsed_comment.replace("<br>", "\n")
-            parsed_comment = re.sub(r"<i>(.*?)</i>", r"*\1*", parsed_comment)
+            parsed_comment = re.sub(r"<i>(.*?)</i>", r"*\1*", comment.text)
             parsed_comment = re.sub(r"<b>(.*?)</b>", r"**\1**", parsed_comment)
             parsed_comment = re.sub(r"<strike>(.*?)</strike>", r"~~\1~~", parsed_comment)
-
+            parsed_comment = parsed_comment.replace("<br>", "\n")
             st.write(parsed_comment)
-            st.write("---")  # Add a separator between comments
+            st.write("---")
 
-    st.subheader("Comment Analysis")
-    st.write(comment_analysis)
+
+def set_state(i):
+    st.session_state.stage = i
+    # st.session_state.step += 1
+    # st.write(f"{st.session_state.step}. State set to: {i}")  # Debug statement
 
 
 def display_sidebar_info():
     st.sidebar.title("About")
     st.sidebar.info("🍓 Hello! Eightify is a tool to quickly gain insights from YouTube videos. Relax and enjoy!")
+
+
+def main():
+    st.set_page_config(page_title="Eightify", page_icon="🍓")
+    display_sidebar_info()
+
+    if "stage" not in st.session_state:
+        st.session_state.stage = 0
+        # Step is a debug variable
+        # st.session_state.step = 0
+
+    if st.session_state.stage == 0:
+        st.button("Start", on_click=set_state, args=[1])
+
+    if st.session_state.stage >= 1:
+        # Input for YouTube URL
+        youtube_url = st.text_input("Enter YouTube Video URL:", on_change=set_state, args=[2])
+
+    if st.session_state.stage >= 2:
+        video_id = extract_video_id(youtube_url)
+        if not video_id:
+            st.error("Invalid YouTube URL.")
+            st.stop()
+
+        video_details = get_video_details(video_id)
+        if not video_details:
+            st.error(f"Can't fetch video details for {video_id}.")
+            st.stop()
+
+        st.subheader(video_details.title)
+        st.video(f"https://www.youtube.com/embed/{video_id}")
+
+        # Get and summarize transcript
+        if not st.session_state.get("summary"):
+            with st.spinner("Summarizing video..."):
+                transcript = get_video_transcript(video_id).points
+                summary = summarize_transcript(video_id)
+            st.session_state.summary = summary
+            st.session_state.transcript = transcript
+
+        st.header("Summary")
+        st.write(st.session_state.summary)
+        with st.expander("Show Full Transcript"):
+            st.write(st.session_state.transcript)
+
+        insight_request = st.text_input("Enter insight to find in comments (optional):", on_change=set_state, args=[3])
+        st.button("Analyze Comments", on_click=set_state, args=[3])
+
+    if st.session_state.stage >= 3:
+        with st.spinner("Analyzing comments..."):
+            comments = get_video_comments(video_id)
+            comment_analysis = analyze_comments(video_id, insight_request)
+
+        st.header("Comment Analysis")
+        display_comments(comments)
+
+        st.write(comment_analysis)
+
+        st.button("Start Over", on_click=set_state, args=[0])
 
 
 if __name__ == "__main__":

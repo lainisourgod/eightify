@@ -18,6 +18,7 @@ class VideoDetails(BaseModel):
 
 class VideoTranscript(BaseModel):
     text: str
+    points: list[str]
 
 
 class VideoComment(BaseModel):

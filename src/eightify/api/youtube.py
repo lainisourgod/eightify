@@ -37,8 +37,9 @@ def get_video_transcript(video_id: str) -> Optional[VideoTranscript]:
 
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
-        transcript_text = " ".join([entry["text"] for entry in transcript])
-        return VideoTranscript(text=transcript_text)
+        points = [entry["text"] for entry in transcript]
+        transcript_text = " ".join(points)
+        return VideoTranscript(text=transcript_text, points=points)
 
     except Exception as e:
         logger.error(f"Error fetching transcript: {e}")

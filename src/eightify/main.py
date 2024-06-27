@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from eightify.api import openai, youtube
+from eightify.api import llm, youtube
 
 load_dotenv()
 
@@ -40,7 +40,9 @@ async def summarize_video(request: VideoRequest):
         raise HTTPException(status_code=404, detail="Transcript not available")
 
     # TODO: use async APIs
-    summary = openai.summarize_text(transcript.text, video_details.title, video_details.description)
+    summary = llm.summarize_text(transcript.text, video_details.title, video_details.description)
+    if summary is None:
+        raise HTTPException(status_code=500, detail="LLM api failed to generate a summary")
 
     return SummarizeResponse(summary=summary)
 
@@ -48,7 +50,9 @@ async def summarize_video(request: VideoRequest):
 @app.post("/analyze_comments", response_model=CommentAnalysisResponse)
 async def analyze_video_comments(request: CommentAnalysisRequest):
     comments = youtube.get_video_comments(request.video_id)
-    comment_analysis = openai.analyze_comments(comments, request.insight_request)
+    comment_analysis = llm.analyze_comments(comments, request.insight_request)
+    if comment_analysis is None:
+        raise HTTPException(status_code=500, detail="LLM api failed to generate a comment analysis")
 
     return CommentAnalysisResponse(comment_analysis=comment_analysis)
 
