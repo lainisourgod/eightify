@@ -73,7 +73,9 @@ def main():
 
     if st.session_state.stage >= 1:
         # Input for YouTube URL
-        youtube_url = st.text_input("Enter YouTube Video URL:", on_change=set_state, args=[2])
+        youtube_url = st.text_input(
+            "Enter YouTube Video URL (only English language for now):", on_change=set_state, args=[2]
+        )
 
     if st.session_state.stage >= 2:
         video_id = extract_video_id(youtube_url)
@@ -92,7 +94,13 @@ def main():
         # Get and summarize transcript
         if not st.session_state.get("summary"):
             with st.spinner("Summarizing video..."):
-                transcript = get_video_transcript(video_id).points
+                transcript = get_video_transcript(video_id)
+                if not transcript:
+                    st.error("No transcript found. Probably it's not in English 😒")
+                    set_state(0)
+                    exit()
+                transcript = transcript.points
+
                 summary = summarize_transcript(video_id)
             st.session_state.summary = summary
             st.session_state.transcript = transcript

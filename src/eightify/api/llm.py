@@ -85,14 +85,14 @@ def summarize_text(
     return answer
 
 
-def analyze_comments(comments: list[str], insight_request: str | None = None) -> str | None:
+def analyze_comments(comments: list[VideoComment], insight_request: str | None = None) -> str | None:
     """
     Analyze the following YouTube video comments and provide insights.
     You can optionally provide a user-specified insight request, prompting AI
     to focus on that aspect in the comments.
     """
     COMMENT_SEPARATOR = "|||"
-    comment_text = COMMENT_SEPARATOR.join(comments)
+    comment_text = COMMENT_SEPARATOR.join([comment.text for comment in comments])
 
     base_prompt = f"""
     Analyze the following YouTube video comments and provide insights. The comments are separated by '{COMMENT_SEPARATOR}'.
