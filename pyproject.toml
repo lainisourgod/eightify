@@ -13,7 +13,6 @@ dependencies = [
     "loguru>=0.7.2",
     "streamlit>=1.36.0",
     "requests>=2.32.3",
-    "anthropic>=0.30.0",
     "pydantic-settings>=2.3.4",
 ]
 readme = "README.md"

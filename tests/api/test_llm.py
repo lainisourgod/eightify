@@ -1,6 +1,6 @@
 import pytest
 
-from eightify.api.llm import analyze_comments, summarize_text
+from eightify.api.llm import analyze_and_cluster_comments, summarize_text
 from eightify.common import VideoComment, VideoDetails, VideoTranscript
 
 
@@ -36,7 +36,7 @@ def test_analyze_comments():
         "I disagree with some points. AI isn't as advanced as you claim.",
     ]
 
-    analysis = analyze_comments(
+    analysis = analyze_and_cluster_comments(
         [VideoComment(text=comment) for comment in comments],
         VideoDetails(
             title="The Impact of AI on Society",
@@ -44,9 +44,9 @@ def test_analyze_comments():
         ),
     )
 
-    assert isinstance(analysis, str)
-    assert len(analysis) > 0
-    assert "AI" in analysis or "artificial intelligence" in analysis.lower()
+    assert isinstance(analysis.overall_analysis, str)
+    assert len(analysis.overall_analysis) > 0
+    assert "AI" in analysis.overall_analysis or "artificial intelligence" in analysis.overall_analysis.lower()
 
 
 @pytest.mark.integration
@@ -59,7 +59,7 @@ def test_analyze_comments_with_insight_request():
     ]
     insight_request = "Analyze the technical level of understanding among the viewers."
 
-    analysis = analyze_comments(
+    analysis = analyze_and_cluster_comments(
         [VideoComment(text=comment) for comment in comments],
         VideoDetails(
             title="The Impact of AI on Society",
@@ -68,7 +68,7 @@ def test_analyze_comments_with_insight_request():
         insight_request,
     )
 
-    assert isinstance(analysis, str)
-    assert len(analysis) > 0
-    assert "technical" in analysis.lower()
-    assert "understanding" in analysis.lower() or "knowledge" in analysis.lower()
+    assert isinstance(analysis.overall_analysis, str)
+    assert len(analysis.overall_analysis) > 0
+    assert "technical" in analysis.overall_analysis.lower()
+    assert "understanding" in analysis.overall_analysis.lower() or "knowledge" in analysis.overall_analysis.lower()

@@ -9,7 +9,7 @@ from loguru import logger
 from pydantic import BaseModel
 
 from eightify.api import llm, youtube
-from eightify.common import VideoDetails, VideoTranscript
+from eightify.common import CommentAnalysis, VideoDetails, VideoTranscript
 from eightify.config import config
 
 
@@ -52,7 +52,7 @@ class CommentAnalysisRequest(BaseModel):
 
 
 class CommentAnalysisResponse(BaseModel):
-    comment_analysis: str
+    comment_analysis: CommentAnalysis
 
 
 async def fetch_data(video_id: str, app_state: State, data_type: str, fetch_function) -> VideoDetails | VideoTranscript:
@@ -98,30 +98,29 @@ async def summarize_video(request: VideoRequest, fastapi_request: Request):
     return SummarizeResponse(summary=summary)
 
 
-@app.post("/analyze_comments", response_model=CommentAnalysisResponse)
+@app.post("/analyze_comments", response_model=CommentAnalysis)
 async def analyze_video_comments(request: CommentAnalysisRequest, fastapi_request: Request):
     video_id = request.video_id
     app_state = fastapi_request.app.state
     try:
         video_summary = app_state.video_summaries.get(video_id)
-        video_details = app_state.video_details.get(video_id)
-        transcript = app_state.transcripts.get(video_id)
+        video_details = await fetch_video_details(video_id, app_state)
+        transcript = await fetch_video_transcript(video_id, app_state)
     except KeyError:
         raise HTTPException(status_code=404, detail="analyze_comments should be called after summarize_video")
 
     comments = youtube.get_video_comments(video_id)
 
-    comment_analysis = llm.analyze_comments(
+    analysis_result = llm.analyze_and_cluster_comments(
         comments=comments,
-        insight_request=request.insight_request,
         video_details=video_details,
-        transcript=transcript,
         summary=video_summary,
+        insight_request=request.insight_request,
     )
-    if comment_analysis is None:
+    if analysis_result is None:
         raise HTTPException(status_code=500, detail="LLM api failed to generate a comment analysis")
 
-    return CommentAnalysisResponse(comment_analysis=comment_analysis)
+    return analysis_result
 
 
 @app.get("/")
