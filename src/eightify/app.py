@@ -4,7 +4,7 @@ import requests
 import streamlit as st
 
 from eightify.api.youtube import get_video_comments, get_video_details, get_video_transcript
-from eightify.types import VideoComment
+from eightify.common import VideoComment
 from eightify.utils import extract_video_id
 
 APP_HOST = "http://localhost:8000"

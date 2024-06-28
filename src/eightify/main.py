@@ -9,11 +9,8 @@ from loguru import logger
 from pydantic import BaseModel
 
 from eightify.api import llm, youtube
+from eightify.common import VideoDetails, VideoTranscript
 from eightify.config import config
-from eightify.types import VideoDetails, VideoTranscript
-
-logger.info(f"Starting with config")
-logger.info(config)
 
 
 @asynccontextmanager
@@ -130,3 +127,14 @@ async def analyze_video_comments(request: CommentAnalysisRequest, fastapi_reques
 @app.get("/")
 async def root():
     return {"message": "Welcome to Eightify API — a tool for generating insights from YouTube videos."}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    from eightify.config import config
+
+    logger.info(f"Starting with config")
+    logger.info(config)
+
+    uvicorn.run("eightify.main:app", host="0.0.0.0", port=8000, reload=True, log_level=config.log_level.lower())

@@ -5,8 +5,8 @@ from googleapiclient.discovery import build
 from loguru import logger
 from youtube_transcript_api import YouTubeTranscriptApi
 
+from eightify.common import VideoComment, VideoDetails, VideoTranscript
 from eightify.config import config
-from eightify.types import VideoComment, VideoDetails, VideoTranscript
 
 youtube = build("youtube", "v3", developerKey=config.youtube_api_key.get_secret_value())
 

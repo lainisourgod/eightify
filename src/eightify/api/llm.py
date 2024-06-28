@@ -5,8 +5,8 @@ from anthropic import Anthropic
 from loguru import logger
 from openai import OpenAI
 
+from eightify.common import VideoComment, VideoDetails, VideoTranscript
 from eightify.config import config
-from eightify.types import VideoComment, VideoDetails, VideoTranscript
 
 if config.llm_model.startswith("claude"):
     client = Anthropic(api_key=config.anthropic_key.get_secret_value())

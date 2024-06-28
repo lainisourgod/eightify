@@ -1,7 +1,7 @@
 import pytest
 
 from eightify.api.llm import analyze_comments, summarize_text
-from eightify.types import VideoComment, VideoDetails, VideoTranscript
+from eightify.common import VideoComment, VideoDetails, VideoTranscript
 
 
 @pytest.mark.integration

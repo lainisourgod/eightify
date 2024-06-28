@@ -21,7 +21,7 @@
 - Install in venv
   `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.lock`
 - Put creds in `.env`
-- Start the backend in one terminal: `uvicorn eightify.main:app --reload`
+- Start the backend in one terminal: `python src/eightify/main.py`
 - Start the frontend in another terminal: `streamlit run src/eightify/app.py`
 - Enjoy your time in the browser interface
 
