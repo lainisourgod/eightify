@@ -1,27 +1,48 @@
-import os
+import json
+from typing import TypedDict
 
 from anthropic import Anthropic
-from dotenv import load_dotenv
 from loguru import logger
 from openai import OpenAI
 
 from eightify.config import config
 from eightify.types import VideoComment, VideoDetails, VideoTranscript
 
-load_dotenv(override=True)
 if config.llm_model.startswith("claude"):
     client = Anthropic(api_key=config.anthropic_key.get_secret_value())
 else:
     client = OpenAI(api_key=config.openai_api_key.get_secret_value())
 
 
-def log_prompt(prompt: str, prompt_name: str) -> None:
-    if len(prompt) > config.log_prompt_length:
-        half_length = config.log_prompt_length // 2
-        message = f"Prompt from {prompt_name}: {prompt[:half_length]}\n🙈...🙈\n{prompt[-half_length:]}"
-    else:
-        message = f"Prompt from {prompt_name}: {prompt}"
-    logger.debug(message)
+class SummaryPoint(TypedDict):
+    emoji: str
+    title: str
+    content: str
+    quote: str
+    timestamp: str
+
+
+class SummaryFunction(TypedDict):
+    name: str
+    description: str
+    parameters: dict
+
+
+class CommentInsight(TypedDict):
+    emoji: str
+    title: str
+    content: str
+    quotes: list[str]
+
+
+class FollowUpTopic(TypedDict):
+    topic: str
+    reason: str
+
+
+class CommentAnalysis(TypedDict):
+    insights: list[CommentInsight]
+    follow_up_topics: list[FollowUpTopic]
 
 
 def create_system_prompt() -> str:
@@ -82,21 +103,22 @@ def create_summary_prompt(video_title: str, video_description: str, transcript: 
     Title: {video_title}
     Description: {video_description}
 
-    For each key point:
-    1. Start with a relevant emoji
-    2. Provide a concise summary with specific details or examples
-    3. Include a brief, impactful quote if available
-    4. If possible, mention an approximate timestamp or section of the video where this point is discussed (e.g., "early in the video", "around the middle", "towards the end")
 
-    Focus on:
-    - 💡 Main ideas and key concepts
-    - 🔍 New or potentially unfamiliar topics for the viewer
-    - 🔑 Practical implications and real-world applications
-    - 🧠 Unique theories or perspectives presented
-    - 💬 Questions that arise from the content that a viewer might want to ask the creator
-    - 📌 Calls to action or viewer engagement elements
+    Provide the summary as a JSON array of objects. Each object should have the following structure:
+    {{
+        "emoji": "Relevant emoji",
+        "title": "Bold title (max 5 words)",
+        "content": "Concise paragraph combining main idea, practical implications, and examples",
+        "quote": "Brief, impactful quote from the video",
+        "timestamp": "Approximate timestamp (MM:SS format)"
+    }}
 
-    After the key points, include a section titled "💬 Potential Questions for the Creator" with 2-3 thought-provoking questions based on the content.
+    Guidelines:
+    - Focus on the most important and unique ideas presented in the video.
+    - Keep the content concise, aiming for 2-3 sentences excluding the quote.
+    - Use clear, direct language without filler phrases.
+    - Ensure each point gives a complete picture of a key idea from the video.
+    - Do not include any introductory or concluding sentences in the JSON.
 
     Transcript:
     {transcript}
@@ -106,18 +128,12 @@ def create_summary_prompt(video_title: str, video_description: str, transcript: 
 
 
 def create_comment_analysis_prompt(
-    comments: list[VideoComment],
     video_details: VideoDetails,
     video_summary: str | None = None,
     insight_request: str | None = None,
-    transcript: VideoTranscript | None = None,
 ) -> str:
-    COMMENT_SEPARATOR = "|||"
-    comment_text = COMMENT_SEPARATOR.join(comment.text for comment in comments)
-
     base_prompt = f"""
-    Analyze the following YouTube video comments. The comments are separated by '{COMMENT_SEPARATOR}'.
-    Video information:
+    Analyze the comments for the following YouTube video:
     Title: {video_details.title}
     Description: {video_details.description}
 
@@ -127,24 +143,14 @@ def create_comment_analysis_prompt(
     - Discovering potential questions for the video creator
     - Understanding the community's reaction and engagement
 
-    Provide insights on:
-    - 🔑 Common themes or topics discussed
-    - 😊 Overall sentiment trends
-    - 💡 Unique or interesting perspectives
-    - ❓ Recurring questions or concerns
-    - 🛠️ Constructive feedback or suggestions
+    Focus on:
+    - Common themes or topics discussed
+    - Overall sentiment trends
+    - Unique or interesting perspectives
+    - Recurring questions or concerns
+    - Constructive feedback or suggestions
 
-    Guidelines:
-    - Structure your response with clear headings for each major insight
-    - Use bullet points for multiple points under each heading
-    - Start each heading with a relevant emoji
-    - Include brief, impactful quotes from comments to support your analysis
-    - Use _italic_ and **bold** for emphasis in longer sentences
-    - Be concise and direct, focusing on valuable insights
-    - Avoid filler phrases or unnecessary judgments
-
-    After the main analysis, include a section titled "📌 Potential Follow-up Topics" with 2-3 ideas based on comment discussions that could be interesting for future content.
-
+    Be concise and direct, focusing on valuable insights. Avoid filler phrases or unnecessary judgments.
     """
 
     if video_summary:
@@ -162,40 +168,38 @@ def create_comment_analysis_prompt(
         Analyze how the comments relate to or discuss this specific topic.
         """
 
-    base_prompt += f"""
-    Comments:
-    {comment_text}
-
-    If the comments are too few or unsuitable for this type of analysis, please indicate this in your response.
-    """
-
     return base_prompt
 
 
-def get_llm_response(system_prompt: str, user_prompt: str) -> str | None:
+def get_llm_response(system_prompt: str, user_prompt: str, function_schema: SummaryFunction) -> str | None:
     """
     Get a response from the language model using either Anthropic or OpenAI client.
     """
-    if isinstance(client, Anthropic):
-        response = client.messages.create(
-            model=config.llm_model,
-            max_tokens=1000,
-            temperature=0,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
-        )
-        return response.content[0].text
-    elif isinstance(client, OpenAI):
-        response = client.chat.completions.create(
-            model=config.llm_model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-        )
-        return response.choices[0].message.content
-    else:
-        raise ValueError("Invalid client type. Please use Anthropic or OpenAI.")
+    try:
+        if isinstance(client, Anthropic):
+            # Anthropic doesn't support function calling in the same way as OpenAI
+            # You might need to modify the prompt to include the function schema
+            response = client.messages.create(
+                model=config.llm_model,
+                max_tokens=1000,
+                temperature=0,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+            return response.content[0].text
+        elif isinstance(client, OpenAI):
+            response = client.chat.completions.create(
+                model=config.llm_model,
+                messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+                functions=[function_schema],
+                function_call={"name": function_schema["name"]},
+            )
+            return response.choices[0].message.function_call.arguments
+        else:
+            raise ValueError("Invalid client type. Please use Anthropic or OpenAI.")
+    except Exception as e:
+        logger.error(f"Error in get_llm_response: {str(e)}")
+        return None
 
 
 def summarize_text(
@@ -203,16 +207,48 @@ def summarize_text(
     video_title: str,
     video_description: str,
 ) -> str | None:
-    """
-    Summarize a YouTube video transcript.
-    """
     cropped_text = transcript.text[: config.max_transcript_length]
     system_prompt = create_system_prompt()
     user_prompt = create_summary_prompt(video_title, video_description, cropped_text, config.max_points)
 
     log_prompt(user_prompt, "summarize_text")
 
-    return get_llm_response(system_prompt, user_prompt)
+    function_schema = {
+        "name": "create_video_summary",
+        "description": "Create a summary of a YouTube video with key points",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "emoji": {"type": "string"},
+                            "title": {"type": "string"},
+                            "content": {"type": "string"},
+                            "quote": {"type": "string"},
+                            "timestamp": {"type": "string"},
+                        },
+                        "required": ["emoji", "title", "content", "quote", "timestamp"],
+                    },
+                }
+            },
+            "required": ["summary"],
+        },
+    }
+
+    response = get_llm_response(system_prompt, user_prompt, function_schema)
+
+    if response:
+        try:
+            summary_data = json.loads(response)["summary"]
+            formatted_summary = format_summary(summary_data)
+            return formatted_summary
+        except (json.JSONDecodeError, KeyError):
+            logger.error("Failed to parse JSON response from LLM")
+            return None
+    return None
 
 
 def analyze_comments(
@@ -231,13 +267,98 @@ def analyze_comments(
 
     system_prompt = create_system_prompt()
     user_prompt = create_comment_analysis_prompt(
-        comments=comments,
+        video_details=video_details,
         video_summary=summary,
         insight_request=insight_request,
-        video_details=video_details,
-        transcript=transcript,
     )
+
+    comment_text = "\n".join(f"Comment {i + 1}: {comment.text}" for i, comment in enumerate(comments))
+    user_prompt += f"\n\nComments:\n{comment_text}"
 
     log_prompt(user_prompt, "analyze_comments")
 
-    return get_llm_response(system_prompt, user_prompt)
+    function_schema = {
+        "name": "analyze_video_comments",
+        "description": "Analyze YouTube video comments and provide insights",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "insights": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "emoji": {"type": "string"},
+                            "title": {"type": "string"},
+                            "content": {"type": "string"},
+                            "quotes": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "required": ["emoji", "title", "content", "quotes"],
+                    },
+                },
+                "follow_up_topics": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {"topic": {"type": "string"}, "reason": {"type": "string"}},
+                        "required": ["topic", "reason"],
+                    },
+                },
+            },
+            "required": ["insights", "follow_up_topics"],
+        },
+    }
+
+    response = get_llm_response(system_prompt, user_prompt, function_schema)
+
+    if response:
+        try:
+            analysis_data = json.loads(response)
+            formatted_analysis = format_comment_analysis(analysis_data)
+            return formatted_analysis
+        except (json.JSONDecodeError, KeyError):
+            logger.error("Failed to parse JSON response from LLM")
+            return None
+    return None
+
+
+def format_summary(summary_data: list[SummaryPoint]) -> str:
+    """
+    Format the JSON summary data into a readable string.
+    """
+    formatted_summary = "**Key Points**\n\n"
+    for i, point in enumerate(summary_data, 1):
+        formatted_summary += (
+            f"{i}. {point['emoji']} **{point['title']}:** {point['content']} "
+            f"*\"{point['quote']}\"* ({point['timestamp']})\n\n"
+        )
+    return formatted_summary.strip()
+
+
+def format_comment_analysis(analysis_data: CommentAnalysis) -> str:
+    """
+    Format the JSON comment analysis data into a readable string.
+    """
+    formatted_analysis = "**Comment Analysis**\n\n"
+
+    for insight in analysis_data["insights"]:
+        formatted_analysis += f"{insight['emoji']} **{insight['title']}**\n" f"{insight['content']}\n"
+        if insight["quotes"]:
+            for quote in insight["quotes"]:
+                formatted_analysis += f"> {quote}\n"
+        formatted_analysis += "\n"
+
+    formatted_analysis += "**📌 Potential Follow-up Topics**\n\n"
+    for topic in analysis_data["follow_up_topics"]:
+        formatted_analysis += f"- **{topic['topic']}**: {topic['reason']}\n"
+
+    return formatted_analysis.strip()
+
+
+def log_prompt(prompt: str, prompt_name: str) -> None:
+    if len(prompt) > config.log_prompt_length:
+        half_length = config.log_prompt_length // 2
+        message = f"Prompt from {prompt_name}: {prompt[:half_length]}\n🙈...🙈\n{prompt[-half_length:]}"
+    else:
+        message = f"Prompt from {prompt_name}: {prompt}"
+    logger.debug(message)

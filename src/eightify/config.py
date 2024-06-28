@@ -10,7 +10,7 @@ install(show_locals=True)
 
 
 class Settings(BaseSettings):
-    llm_model: str = "gpt-3.5-turbo"
+    llm_model: str = "gpt-4o"
     anthropic_key: SecretStr = ""
     openai_api_key: SecretStr = ""
     youtube_api_key: SecretStr = ""
