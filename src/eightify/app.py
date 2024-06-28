@@ -39,7 +39,7 @@ def analyze_comments(video_id: str, insight_request: str) -> CommentAnalysis:
     return CommentAnalysis(**response)
 
 
-def display_comments(comments: list[VideoComment]):
+def display_raw_comments(comments: list[VideoComment]):
     with st.expander("Show Comments"):
         for comment in comments:
             parsed_comment = re.sub(r"<i>(.*?)</i>", r"*\1*", comment.text)
@@ -57,6 +57,20 @@ def set_state(i):
 def display_sidebar_info():
     st.sidebar.title("About")
     st.sidebar.info("🍓 Hello! Eightify is a tool to quickly gain insights from YouTube videos. Relax and enjoy!")
+
+
+def display_topic_comments(topic_comments):
+    comment_cols = st.columns(5)
+    for j, comment in enumerate(topic_comments):
+        with comment_cols[j % 5]:
+            st.markdown(
+                f"""
+                <div style="border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin-bottom: 10px;">
+                    <small>{comment.text}</small>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 
 def main():
@@ -104,6 +118,7 @@ def main():
 
                 st.session_state.summary = summary
                 st.session_state.transcript = transcript
+            # TODO: transcript is shown twice
             with st.expander("Show Full Transcript"):
                 st.write(st.session_state.transcript)
 
@@ -121,41 +136,30 @@ def main():
             with st.spinner("Analyzing comments..."):
                 comment_analysis = analyze_comments(video_id, insight_request)
 
-            num_topics = len(comment_analysis.topics)
-            cols = st.columns(num_topics)
-
-            for i, (topic, col) in enumerate(zip(comment_analysis.topics, cols)):
-                with col:
-                    st.subheader(f"{i + 1}. {topic.name}")
-                    st.write(topic.description)
-
-                    topic_comments = [
-                        comment_analysis.comments[ca.comment_index]
-                        for ca in comment_analysis.comment_assignments
-                        if ca.topic_index == i
-                    ]
-                    if topic_comments:
-                        for comment in topic_comments[:3]:
-                            st.markdown(f"> {comment.text}")
-
-                        if len(topic_comments) > 3:
-                            if f"show_more_{i}" not in st.session_state:
-                                st.session_state[f"show_more_{i}"] = False
-
-                            if st.button(
-                                "Show more comments"
-                                if not st.session_state[f"show_more_{i}"]
-                                else "Show less comments",
-                                key=f"more_comments_{i}",
-                            ):
-                                st.session_state[f"show_more_{i}"] = not st.session_state[f"show_more_{i}"]
-
-                            if st.session_state[f"show_more_{i}"]:
-                                for comment in topic_comments[3:]:
-                                    st.markdown(f"> {comment.text}")
-
             st.subheader("Overall Analysis")
             st.write(comment_analysis.overall_analysis)
+
+            st.subheader("Comment Topics")
+            topic_buttons = st.columns(len(comment_analysis.topics))
+
+            for i, (topic, col) in enumerate(zip(comment_analysis.topics, topic_buttons)):
+                with col:
+                    if st.button(f"{i + 1}. {topic.name}", key=f"topic_{i}"):
+                        st.session_state.selected_topic = i
+
+            if "selected_topic" in st.session_state:
+                i = st.session_state.selected_topic
+                topic = comment_analysis.topics[i]
+                st.write(topic.description)
+
+                topic_comments = [
+                    comment_analysis.comments[ca.comment_index]
+                    for ca in comment_analysis.comment_assignments
+                    if ca.topic_index == i
+                ]
+
+                if topic_comments:
+                    display_topic_comments(topic_comments)
 
         st.button("Start Over", on_click=set_state, args=[0])
 
