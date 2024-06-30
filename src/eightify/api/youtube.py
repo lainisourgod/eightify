@@ -55,7 +55,7 @@ def get_video_comments(video_id: str, max_results: int = config.max_number_of_co
     response = request.execute()
 
     if not response["items"]:
-        logger.error(f"No video comments found for {video_id}")
+        logger.warning(f"No video comments found for {video_id}")
         return []
 
     return [

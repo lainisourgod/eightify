@@ -1,9 +1,10 @@
 import re
+from json import JSONDecodeError
 
 import requests
 import streamlit as st
 
-from eightify.api.youtube import get_video_comments, get_video_details, get_video_transcript
+from eightify.api.youtube import get_video_details, get_video_transcript
 from eightify.common import CommentAnalysis, VideoComment
 from eightify.utils import extract_video_id
 
@@ -22,21 +23,27 @@ def display_video_details(video_id):
 
 
 @st.cache_data
-def summarize_transcript(video_id: str) -> str:
+def summarize_transcript(video_id: str) -> str | None:
     summary_response = requests.post(
         f"{APP_HOST}/summarize",
         json={"video_id": video_id},
-    ).json()
-    return summary_response.get("summary")
+    )
+    try:
+        return summary_response.json().get("summary")
+    except JSONDecodeError:
+        return None
 
 
 @st.cache_data
-def analyze_comments(video_id: str, insight_request: str) -> CommentAnalysis:
+def analyze_comments(video_id: str, insight_request: str) -> CommentAnalysis | None:
     response = requests.post(
         f"{APP_HOST}/analyze_comments",
         json={"video_id": video_id, "insight_request": insight_request},
-    ).json()
-    return CommentAnalysis(**response)
+    )
+    try:
+        return CommentAnalysis(**response.json())
+    except JSONDecodeError:
+        return None
 
 
 def display_raw_comments(comments: list[VideoComment]):
@@ -144,6 +151,10 @@ def main():
         if st.session_state.stage >= 3:
             with st.spinner("Analyzing comments..."):
                 comment_analysis = analyze_comments(video_id, insight_request)
+                if comment_analysis is None:
+                    st.error("No comments found.")
+                    set_state(2)
+                    st.stop()
 
             st.subheader("Overall Analysis")
             st.write(comment_analysis.overall_analysis)
