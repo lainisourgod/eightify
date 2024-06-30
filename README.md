@@ -27,6 +27,8 @@
     - [👹 Design decisions](#-design-decisions)
     - [💸 Unit economics](#-unit-economics)
   - [👻 Usage](#-usage)
+    - [Local run](#local-run)
+    - [In docker/on GCP](#in-dockeron-gcp)
   - [🧑‍💻 Development](#-development)
   - [🏗️ Project structure](#️-project-structure)
   - [🤩 TODO:](#-todo)
@@ -128,6 +130,8 @@
 
 ## 👻 Usage
 
+### Local run
+
 - Install in venv
   `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.lock`
 - Put creds in `.env`
@@ -135,6 +139,23 @@
 - Start the frontend in another terminal: `streamlit run src/eightify/app.py`
 - Enjoy your time in the browser interface:
   [http://localhost:8501](http://localhost:8501)
+
+### In docker/on GCP
+
+I deploy to Google Cloud Run and it wasn't easy to deploy both frontend and
+backend to run from one service → so for now I start them in one python process.
+
+Correct way would be to setup `docker-compose` for local builds, with different
+docker images for frontend and backend, for cloud — setup separate containers in
+GCR service, communicate with authentication.
+
+I don't need any scaling for now, so coupling of the services is not a problem.
+For future:
+https://www.googlecloudcommunity.com/gc/Community-Blogs/No-servers-no-problem-A-guide-to-deploying-your-React/ba-p/690760
+
+- Put creds in `.env`
+- `docker build -t eightify .`
+- `docker run -p 8000:8000 -p 8501:8501 --env-file .env eightify`
 
 ## 🧑‍💻 Development
 
@@ -150,6 +171,7 @@
 
 - `main.py` — backend on FastAPI
 - `app.py` — fronted on Streamlit
+- `cloud_app.py` — run both in the same process (for deployment)
 - `api/youtube.py` — API calls to YouTube (descriptions, transcripts, comments)
 - `api/llm/base.py` — interaction with LLM, system prompt, debug logs
 - `api/llm/summary.py` — summary prompt and response parsing
@@ -159,14 +181,6 @@
 
 ## 🤩 TODO:
 
-- Dockerize
-  - Will use the same Dockerfile for the backend and frontend as they share the
-    common logic
-  - Add docker-compose
-- **Add demo deployment** (Github Pages?)
-  - create a separate openai token for the demo with limited quota
-  - show exceptions if token limit is reached
-  - add notification to telegram when somebody is using the demo?
 - Migrate to LLM framework (langchain / haystack / dspy)
 - Automatic evaluation pipeline using LLM framework (too much to implement
   myself)

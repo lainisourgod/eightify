@@ -5,27 +5,20 @@ import requests
 import streamlit as st
 
 from eightify.api.youtube import get_video_details, get_video_transcript
-from eightify.common import CommentAnalysis, VideoComment
+from eightify.common import CommentAnalysis, VideoComment, VideoDetails
+from eightify.config import config
 from eightify.utils import extract_video_id
 
-APP_HOST = "http://localhost:8000"
 
-
-def display_video_details(video_id):
-    video_details = get_video_details(video_id)
-
-    if not video_details:
-        st.error("No video details found.")
-        st.stop()
-
-    st.subheader(video_details.title)
-    st.video(f"https://www.youtube.com/embed/{video_id}")
+@st.cache_data
+def fetch_video_details(video_id: str) -> VideoDetails | None:
+    return get_video_details(video_id)
 
 
 @st.cache_data
 def summarize_transcript(video_id: str) -> str | None:
     summary_response = requests.post(
-        f"{APP_HOST}/summarize",
+        f"{config.backend_url}/summarize",
         json={"video_id": video_id},
     )
     try:
@@ -37,7 +30,7 @@ def summarize_transcript(video_id: str) -> str | None:
 @st.cache_data
 def analyze_comments(video_id: str, insight_request: str) -> CommentAnalysis | None:
     response = requests.post(
-        f"{APP_HOST}/analyze_comments",
+        f"{config.backend_url}/analyze_comments",
         json={"video_id": video_id, "insight_request": insight_request},
     )
     try:
@@ -101,7 +94,7 @@ def main():
             st.error("Invalid YouTube URL.")
             st.stop()
 
-        video_details = get_video_details(video_id)
+        video_details = fetch_video_details(video_id)
         if not video_details:
             st.error(f"Can't fetch video details for {video_id}.")
             st.stop()

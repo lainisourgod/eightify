@@ -4,9 +4,8 @@ WORKDIR /app
 
 COPY . /app
 
+# There's no easy way to first install requirements and then the package itself, so
+# do it together: https://rye.astral.sh/guide/docker/
 RUN pip install --no-cache-dir -r requirements.lock
 
-EXPOSE 8000 8501
-
-# TODO: change to composite app
-CMD ["fastapi", "run", "src/eightify/main.py"]
+CMD ["python", "src/eightify/cloud_app.py"]

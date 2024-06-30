@@ -11,7 +11,6 @@ install(show_locals=True)
 
 class Settings(BaseSettings):
     llm_model: str = "gpt-4o"
-    anthropic_key: SecretStr = ""
     openai_api_key: SecretStr = ""
     youtube_api_key: SecretStr = ""
     min_number_of_comments: int = 10
@@ -22,8 +21,18 @@ class Settings(BaseSettings):
     max_transcript_length: Optional[int] = None
     log_level: str = "DEBUG"
     log_prompt_length: int = 100
+    api_port: int = 8000
+    port: int = 8501
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    @property
+    def backend_url(self) -> str:
+        return f"http://0.0.0.0:{self.api_port}"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="allow",
+    )
 
 
 config = Settings()

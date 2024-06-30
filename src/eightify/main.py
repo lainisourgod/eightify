@@ -2,6 +2,7 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import Optional
 
+import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.datastructures import State
 from fastapi.middleware.cors import CORSMiddleware
@@ -129,12 +130,14 @@ async def root():
     return {"message": "Welcome to Eightify API — a tool for generating insights from YouTube videos."}
 
 
-if __name__ == "__main__":
-    import uvicorn
-
-    from eightify.config import config
-
+def main():
     logger.info(f"Starting with config")
     logger.info(config)
 
-    uvicorn.run("eightify.main:app", host="0.0.0.0", port=8000, reload=True, log_level=config.log_level.lower())
+    uvicorn.run(
+        "eightify.main:app", host="0.0.0.0", port=config.api_port, reload=True, log_level=config.log_level.lower()
+    )
+
+
+if __name__ == "__main__":
+    main()
