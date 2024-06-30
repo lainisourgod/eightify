@@ -127,11 +127,20 @@ def main():
             st.write(st.session_state.summary)
 
         st.header("Comment Analysis")
-        insight_request = st.text_input("Enter insight to find in comments (optional):", on_change=set_state, args=[3])
-        if st.button("Analyze Comments"):
-            set_state(3)
 
-        # TODO: move this hard code to the function
+        col1, col2 = st.columns(2)
+        with col1:
+            insight_request = st.text_input(
+                "Enter insight to find in comments (optional):", on_change=set_state, args=[3]
+            )
+
+        with col2:
+            # Add padding to the button accomodate for text input label height
+            vert_space = '<div style="padding: 13.5px 5px;"></div>'
+            st.markdown(vert_space, unsafe_allow_html=True)
+            if st.button("Analyze Comments"):
+                set_state(3)
+
         if st.session_state.stage >= 3:
             with st.spinner("Analyzing comments..."):
                 comment_analysis = analyze_comments(video_id, insight_request)
