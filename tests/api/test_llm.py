@@ -26,6 +26,10 @@ def test_summarize_text():
     assert "AI" in summary or "artificial intelligence" in summary.lower()
 
 
+from eightify.api.llm import analyze_and_cluster_comments, summarize_text
+from eightify.common import CommentAnalysis, CommentTopic, VideoComment, VideoDetails
+
+
 @pytest.mark.integration
 def test_analyze_comments():
     comments = [
@@ -33,6 +37,7 @@ def test_analyze_comments():
         "I'm concerned about the ethical implications of AI. Can you make a video about that?",
         "This content is so informative. Keep up the good work!",
         "I disagree with some points. AI isn't as advanced as you claim.",
+        "Nice background music!",  # This comment might be filtered out as uninteresting
     ]
 
     analysis = analyze_and_cluster_comments(
@@ -43,20 +48,20 @@ def test_analyze_comments():
         ),
     )
 
-    assert analysis is not None
+    assert isinstance(analysis, CommentAnalysis)
     assert len(analysis.overall_analysis) > 0
     assert "AI" in analysis.overall_analysis or "artificial intelligence" in analysis.overall_analysis.lower()
     assert len(analysis.topics) > 0
-    assert len(analysis.comment_assignments) == len(comments)
+    assert len(analysis.comments) == len(comments)  # All original comments are preserved
 
-    # Check if all comments are assigned to a topic
-    assert all(assignment.topic_index < len(analysis.topics) for assignment in analysis.comment_assignments)
+    # Check if all topics have at least one comment
+    assert all(len(topic.comment_indices) > 0 for topic in analysis.topics)
 
-    # Check if there are no empty topics
-    topic_usage = [False] * len(analysis.topics)
-    for assignment in analysis.comment_assignments:
-        topic_usage[assignment.topic_index] = True
-    assert all(topic_usage)
+    # Check if some comments might not be assigned to any topic (filtered out as uninteresting)
+    assigned_comment_indices = set()
+    for topic in analysis.topics:
+        assigned_comment_indices.update(topic.comment_indices)
+    assert len(assigned_comment_indices) <= len(comments)
 
     # Check if the overall analysis mentions key aspects from the video details
     assert "society" in analysis.overall_analysis.lower() or "impact" in analysis.overall_analysis.lower()
@@ -69,6 +74,7 @@ def test_analyze_comments_with_insight_request():
         "Could you cover more about deep learning in your next video?",
         "I'm a beginner, and this helped me understand AI basics.",
         "As a data scientist, I appreciate the technical depth of your content.",
+        "The intro music was too loud.",  # This comment might be filtered out as uninteresting
     ]
     insight_request = "Analyze the technical level of understanding among the viewers."
 
@@ -81,12 +87,12 @@ def test_analyze_comments_with_insight_request():
         insight_request=insight_request,
     )
 
-    assert analysis is not None
+    assert isinstance(analysis, CommentAnalysis)
     assert len(analysis.overall_analysis) > 0
     assert "technical" in analysis.overall_analysis.lower()
     assert "understanding" in analysis.overall_analysis.lower() or "knowledge" in analysis.overall_analysis.lower()
     assert len(analysis.topics) > 0
-    assert len(analysis.comment_assignments) == len(comments)
+    assert len(analysis.comments) == len(comments)  # All original comments are preserved
 
     # Check if the insight request is addressed in the analysis
     assert any(word in analysis.overall_analysis.lower() for word in ["beginner", "data scientist", "technical level"])
@@ -96,11 +102,15 @@ def test_analyze_comments_with_insight_request():
     assert any("beginner" in name or "basic" in name for name in topic_names)
     assert any("advanced" in name or "technical" in name for name in topic_names)
 
-    # Verify that comments are assigned to appropriate topics
-    for assignment in analysis.comment_assignments:
-        comment = comments[assignment.comment_index]
-        topic = analysis.topics[assignment.topic_index]
-        if "beginner" in comment.lower():
-            assert "beginner" in topic.name.lower() or "basic" in topic.name.lower()
-        if "data scientist" in comment.lower():
-            assert "advanced" in topic.name.lower() or "technical" in topic.name.lower()
+    # Verify that relevant comments are assigned to appropriate topics
+    for topic in analysis.topics:
+        if "beginner" in topic.name.lower() or "basic" in topic.name.lower():
+            assert any("beginner" in analysis.comments[i].text.lower() for i in topic.comment_indices)
+        if "advanced" in topic.name.lower() or "technical" in topic.name.lower():
+            assert any("data scientist" in analysis.comments[i].text.lower() for i in topic.comment_indices)
+
+    # Check if some comments might not be assigned to any topic (filtered out as uninteresting)
+    assigned_comment_indices = set()
+    for topic in analysis.topics:
+        assigned_comment_indices.update(topic.comment_indices)
+    assert len(assigned_comment_indices) <= len(comments)

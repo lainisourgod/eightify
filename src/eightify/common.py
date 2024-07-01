@@ -28,15 +28,10 @@ class VideoComment(BaseModel):
 class CommentTopic(BaseModel):
     name: str
     description: str
-
-
-class CommentAssignment(BaseModel):
-    comment_index: int
-    topic_index: int
+    comment_indices: list[int]
 
 
 class CommentAnalysis(BaseModel):
-    topics: list[CommentTopic]
-    comment_assignments: list[CommentAssignment]
     comments: list[VideoComment]
     overall_analysis: str
+    topics: list[CommentTopic]

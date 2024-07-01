@@ -14,7 +14,7 @@ def fetch_video_details(video_id: str) -> VideoDetails | None:
     return get_video_details(video_id)
 
 
-def make_api_request(endpoint: str, data: dict, timeout: int = 30) -> dict | None:
+def make_api_request(endpoint: str, data: dict, timeout: int = 60) -> dict | None:
     try:
         response = requests.post(
             f"{config.backend_url}/{endpoint}",
@@ -53,7 +53,7 @@ def display_raw_comments(comments: list[VideoComment]):
             st.write("---")
 
 
-def make_shorter_if_long(text: str, max_length: int = 50) -> str:
+def make_shorter_if_long(text: str, max_length: int) -> str:
     return text[:max_length] + "..." if len(text) > max_length else text
 
 
@@ -109,7 +109,7 @@ def main():
         col1, col2 = st.columns(2, gap="large")
 
         with col1:
-            st.subheader(make_shorter_if_long(video_details.title))
+            st.subheader(make_shorter_if_long(video_details.title, 150))
             st.video(f"https://www.youtube.com/embed/{video_id}")
 
             if not st.session_state.get("summary"):
@@ -157,10 +157,10 @@ def main():
                     set_state(2)
                     st.stop()
 
-            st.subheader("Overall Analysis")
+            st.subheader("📌 TLDR")
             st.write(comment_analysis.overall_analysis)
 
-            st.subheader("Comment Topics")
+            st.subheader("👀 Comment Topics")
             topic_buttons = st.columns(len(comment_analysis.topics))
 
             for i, (topic, col) in enumerate(zip(comment_analysis.topics, topic_buttons)):
@@ -171,12 +171,10 @@ def main():
             if "selected_topic" in st.session_state:
                 i = st.session_state.selected_topic
                 topic = comment_analysis.topics[i]
-                st.write(topic.description)
 
                 topic_comments = [
-                    comment_analysis.comments[ca.comment_index]
-                    for ca in comment_analysis.comment_assignments
-                    if ca.topic_index == i
+                    comment_analysis.comments[comment_index]
+                    for comment_index in comment_analysis.topics[i].comment_indices
                 ]
 
                 if topic_comments:
