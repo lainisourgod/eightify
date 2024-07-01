@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = ""
     youtube_api_key: SecretStr = ""
     min_number_of_comments: int = 10
-    max_number_of_comments: int = 100
-    max_points: int = 5
+    max_number_of_comments: int = 200
+    max_points: int = 7
     # TODO: default should be some small int to avoid burning API credits relentlessly
     # but .env parsing of "null" into Optional[int] is not working as expected
     max_transcript_length: Optional[int] = None

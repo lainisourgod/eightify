@@ -50,6 +50,10 @@ def display_raw_comments(comments: list[VideoComment]):
             st.write("---")
 
 
+def make_shorter_if_long(text: str, max_length: int = 50) -> str:
+    return text[:max_length] + "..." if len(text) > max_length else text
+
+
 def set_state(i):
     st.session_state.stage = i
 
@@ -102,7 +106,7 @@ def main():
         col1, col2 = st.columns(2, gap="large")
 
         with col1:
-            st.subheader(video_details.title)
+            st.subheader(make_shorter_if_long(video_details.title))
             st.video(f"https://www.youtube.com/embed/{video_id}")
 
             if not st.session_state.get("summary"):
@@ -118,15 +122,16 @@ def main():
 
                 st.session_state.summary = summary
                 st.session_state.transcript = transcript
+
             # TODO: transcript is shown twice
             with st.expander("Show Full Transcript"):
                 st.write(st.session_state.transcript)
 
         with col2:
-            st.header("Summary")
+            st.header("✨ Summary")
             st.write(st.session_state.summary)
 
-        st.header("Comment Analysis")
+        st.header("💭 Comment Analysis")
 
         col1, col2 = st.columns(2)
         with col1:

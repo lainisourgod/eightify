@@ -23,15 +23,15 @@ def create_summary_prompt(video_title: str, video_description: str, transcript: 
         "title": "Bold title (max 5 words)",
         "content": "Concise paragraph combining main idea, practical implications, and examples",
         "quote": "Brief, impactful quote from the video",
-        "timestamp": "Approximate timestamp (MM:SS format)"
     }}
 
     Guidelines:
     - Focus on the most important and unique ideas presented in the video.
-    - Keep the content concise, aiming for 2-3 sentences excluding the quote.
+    - Keep the content concise, aiming for 1 sentence excluding the quote.
     - Use clear, direct language without filler phrases.
     - Ensure each point gives a complete picture of a key idea from the video.
     - Do not include any introductory or concluding sentences in the JSON.
+    - If there's less than {max_points} points, return only what you can.
 
     Transcript:
     {transcript}
@@ -66,9 +66,8 @@ def summarize_text(
                             "title": {"type": "string"},
                             "content": {"type": "string"},
                             "quote": {"type": "string"},
-                            "timestamp": {"type": "string"},
                         },
-                        "required": ["emoji", "title", "content", "quote", "timestamp"],
+                        "required": ["emoji", "title", "content", "quote"],
                     },
                 }
             },
