@@ -1,5 +1,4 @@
 import re
-from json import JSONDecodeError
 
 import requests
 import streamlit as st
@@ -15,28 +14,32 @@ def fetch_video_details(video_id: str) -> VideoDetails | None:
     return get_video_details(video_id)
 
 
+def make_api_request(endpoint: str, data: dict, timeout: int = 30) -> dict | None:
+    try:
+        response = requests.post(
+            f"{config.backend_url}/{endpoint}",
+            json=data,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.Timeout:
+        st.write("Request timed out. The server might be busy. Please try again later. 🕒")
+    except requests.exceptions.RequestException as e:
+        st.write(f"An error occurred while communicating with the API: {str(e)} 🙇")
+    return None
+
+
 @st.cache_data
 def summarize_transcript(video_id: str) -> str | None:
-    summary_response = requests.post(
-        f"{config.backend_url}/summarize",
-        json={"video_id": video_id},
-    )
-    try:
-        return summary_response.json().get("summary")
-    except JSONDecodeError:
-        return None
+    result = make_api_request("summarize", {"video_id": video_id})
+    return result.get("summary") if result else None
 
 
 @st.cache_data
 def analyze_comments(video_id: str, insight_request: str) -> CommentAnalysis | None:
-    response = requests.post(
-        f"{config.backend_url}/analyze_comments",
-        json={"video_id": video_id, "insight_request": insight_request},
-    )
-    try:
-        return CommentAnalysis(**response.json())
-    except JSONDecodeError:
-        return None
+    result = make_api_request("analyze_comments", {"video_id": video_id, "insight_request": insight_request})
+    return CommentAnalysis(**result) if result else None
 
 
 def display_raw_comments(comments: list[VideoComment]):
