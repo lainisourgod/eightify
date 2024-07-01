@@ -8,20 +8,6 @@ from eightify.common import VideoTranscript
 from eightify.config import config
 
 
-class SummaryPoint(TypedDict):
-    emoji: str
-    title: str
-    content: str
-    quote: str
-    timestamp: str
-
-
-class SummaryFunction(TypedDict):
-    name: str
-    description: str
-    parameters: dict
-
-
 def create_summary_prompt(video_title: str, video_description: str, transcript: str, max_points: int) -> str:
     return f"""
     Analyze and summarize the following YouTube video transcript in up to {max_points} key points.
@@ -103,6 +89,13 @@ def summarize_text(
     return None
 
 
+class SummaryPoint(TypedDict):
+    emoji: str
+    title: str
+    content: str
+    quote: str
+
+
 def format_summary(summary_data: list[SummaryPoint]) -> str:
     """
     Format the JSON summary data into a readable string.
@@ -110,7 +103,6 @@ def format_summary(summary_data: list[SummaryPoint]) -> str:
     formatted_summary = "**Key Points**\n\n"
     for i, point in enumerate(summary_data, 1):
         formatted_summary += (
-            f"{i}. {point['emoji']} **{point['title']}:** {point['content']} "
-            f"*\"{point['quote']}\"* ({point['timestamp']})\n\n"
+            f"{i}. {point['emoji']} **{point['title']}:** {point['content']} " f"*\"{point['quote']}\"* \n\n"
         )
     return formatted_summary.strip()

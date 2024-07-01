@@ -7,24 +7,6 @@ from eightify.api.llm.base import create_system_prompt, get_llm_response, log_pr
 from eightify.common import CommentAnalysis, CommentAssignment, CommentTopic, VideoComment, VideoDetails
 from eightify.config import config
 
-
-class CommentInsightFunctionType(TypedDict):
-    emoji: str
-    title: str
-    content: str
-    quotes: list[str]
-
-
-class FollowUpTopicFunctionType(TypedDict):
-    topic: str
-    reason: str
-
-
-class CommentAnalysisFunctionType(TypedDict):
-    insights: list[CommentInsightFunctionType]
-    follow_up_topics: list[FollowUpTopicFunctionType]
-
-
 # TODO: ask it to also find some very interesting but not common comments
 # like an "insightful" one, surpising. make another topic for it
 # TODO: maybe we can create a few predefined topics for such cases
@@ -141,43 +123,7 @@ def analyze_and_cluster_comments(
                 comments=comments,
                 overall_analysis=analysis_data["overall_analysis"],
             )
-            # return format_comment_analysis(analysis_data)
         except json.JSONDecodeError:
             logger.error("Failed to parse JSON response from LLM")
             return None
     return None
-
-
-# def format_comment_analysis(analysis_data: dict) -> str:
-#     """
-#     Format the JSON comment analysis data into a readable string.
-#     """
-#     formatted_analysis = "**Comment Analysis**\n\n"
-
-#     # Format topics and their comments
-#     for i, topic in enumerate(analysis_data["topics"]):
-#         formatted_analysis += f"{i + 1}. **{topic['name']}**\n"
-#         formatted_analysis += f"   {topic['description']}\n\n"
-
-#         # Find comments assigned to this topic
-#         topic_comments = [comment for comment in analysis_data["comment_assignments"] if comment["topic_index"] == i]
-
-#         if topic_comments:
-#             formatted_analysis += "   Sample comments:\n"
-#             for comment in topic_comments[:3]:  # Limit to 3 sample comments per topic
-#                 comment_text = analysis_data["comments"][comment["comment_index"]].text
-#                 formatted_analysis += f"   > {comment_text[:100]}...\n"  # Truncate long comments
-
-#         formatted_analysis += "\n"
-
-#     # Format overall analysis
-#     formatted_analysis += "**Overall Analysis**\n\n"
-#     formatted_analysis += f"{analysis_data['overall_analysis']}\n\n"
-
-#     # You can still include follow-up topics if they're part of your new structure
-#     if "follow_up_topics" in analysis_data:
-#         formatted_analysis += "**📌 Potential Follow-up Topics**\n\n"
-#         for topic in analysis_data["follow_up_topics"]:
-#             formatted_analysis += f"- **{topic['topic']}**: {topic['reason']}\n"
-
-#     return formatted_analysis.strip()
