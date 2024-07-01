@@ -32,7 +32,7 @@ def get_video_transcript(video_id: str) -> Optional[VideoTranscript]:
     logger.debug(f"Getting video transcript for {video_id}")
 
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, ["en"])
         points = [entry["text"] for entry in transcript]
         transcript_text = " ".join(points)
         return VideoTranscript(text=transcript_text, points=points)
